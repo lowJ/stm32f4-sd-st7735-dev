@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "SEGGER_RTT.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,7 +87,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
+  //SEGGER_RTT_ConfigureUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -95,6 +97,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  SEGGER_RTT_printf(0, "Hello Haru\r\n");
 	  HAL_GPIO_TogglePin (GPIOC, GPIO_PIN_13);
 	  HAL_Delay (1000);
 
