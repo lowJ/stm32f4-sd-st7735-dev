@@ -1,0 +1,11 @@
+{
+    "C_Cpp.default.includePath": [
+        "Core/Inc",
+        "Middlewares/Third_party/FatFs/src"
+    ],
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "files.associations": {
+        "fatfs.h": "c",
+        "ff.h": "c"
+    }
+}
