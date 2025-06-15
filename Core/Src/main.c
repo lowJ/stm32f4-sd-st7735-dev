@@ -57,6 +57,10 @@ static void MX_SDIO_SD_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+uint8_t BSP_SD_IsDetected(void)
+{
+  return SD_PRESENT;
+}
 
 /* USER CODE END 0 */
 
@@ -94,25 +98,75 @@ int main(void)
   /* USER CODE BEGIN 2 */
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
-    SEGGER_RTT_printf(0, "SD INFO\r\n");
-    SEGGER_RTT_printf(0, "Block size %lu\r\n", hsd.SdCard.BlockSize);
-    SEGGER_RTT_printf(0, "Block num %lu\r\n", hsd.SdCard.BlockNbr);
-    SEGGER_RTT_printf(0, "Card size %lu\r\n", (hsd.SdCard.BlockSize * hsd.SdCard.BlockNbr) / 1000 );
+  SEGGER_RTT_printf(0, "SD INFO\r\n");
+  SEGGER_RTT_printf(0, "Block size %lu\r\n", hsd.SdCard.BlockSize);
+  SEGGER_RTT_printf(0, "Block num %lu\r\n", hsd.SdCard.BlockNbr);
+  SEGGER_RTT_printf(0, "Card size %lu GB\r\n", ((uint64_t)hsd.SdCard.BlockSize * (uint64_t)hsd.SdCard.BlockNbr) / 1000000000 );
 
-  //SEGGER_RTT_ConfigureUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+  uint32_t last_toggle_ms = HAL_GetTick();
+  uint32_t blink_duration_ms = 1000;
+  
+  if( f_mount(&SDFatFS, (TCHAR const*) SDPath, 0) != FR_OK ) {
+    SEGGER_RTT_printf(0, "Could not mount disk\r\n");
+    Error_Handler();
+  }
+  else
+  {
+    SEGGER_RTT_printf(0, "FS Mount SD!\r\n");
+  }
+
+  const char filename[] = "filea.txt";
+  FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+  if(res == FR_OK)
+  {
+    SEGGER_RTT_printf(0, "File opened");
+  }
+  else
+  {
+    SEGGER_RTT_printf(0, "could not open file %d", res);
+    Error_Handler();
+  }
+
+  uint64_t bytes_read = 0;
+  uint64_t last_bytes_read = 0;
+  uint8_t buf[4096];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_GetTick();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	  SEGGER_RTT_printf(0, "HELLO WORLD");
-	  HAL_Delay(1000);
+    uint32_t time_ms = HAL_GetTick();
+    
+    UINT br;
+    res = f_read( &SDFile, buf, 512, &br);
+    if(res == FR_OK)
+    {
+      if(br != 512)
+      {
+        SEGGER_RTT_printf(0, "br doesnt match requrested");
+      }
+      bytes_read += br;
+    }
+    else
+    {
+      SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
+      Error_Handler();
+    }
+
+
+    /* 1s task */
+    if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
+    {
+	    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	    //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
+      SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
+      last_toggle_ms = time_ms;
+      last_bytes_read = bytes_read;
+    }
   }
   /* USER CODE END 3 */
 }
@@ -184,7 +238,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_4B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 0;
+  hsd.Init.ClockDiv = 10;
   /* USER CODE BEGIN SDIO_Init 2 */
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   if (HAL_SD_Init(&hsd) != HAL_OK ){
