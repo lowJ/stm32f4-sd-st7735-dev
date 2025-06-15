@@ -6,6 +6,7 @@
     "C_Cpp.intelliSenseEngine": "Tag Parser",
     "files.associations": {
         "fatfs.h": "c",
-        "ff.h": "c"
+        "ff.h": "c",
+        "stm32f4xx_hal.h": "c"
     }
 }

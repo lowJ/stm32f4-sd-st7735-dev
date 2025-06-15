@@ -23,6 +23,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "SEGGER_RTT.h"
+#include "st7735.h"
+#include "fonts.h"
+#include "testimg.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +46,8 @@
 /* Private variables ---------------------------------------------------------*/
 SD_HandleTypeDef hsd;
 
+SPI_HandleTypeDef hspi4;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -51,6 +56,7 @@ SD_HandleTypeDef hsd;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SDIO_SD_Init(void);
+static void MX_SPI4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -95,6 +101,7 @@ int main(void)
   MX_GPIO_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
+  MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
@@ -130,6 +137,8 @@ int main(void)
   uint64_t bytes_read = 0;
   uint64_t last_bytes_read = 0;
   uint8_t buf[4096];
+
+  ST7735_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,7 +156,8 @@ int main(void)
     {
       if(br != 512)
       {
-        SEGGER_RTT_printf(0, "br doesnt match requrested");
+        SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
+        Error_Handler();
       }
       bytes_read += br;
     }
@@ -156,6 +166,60 @@ int main(void)
       SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
       Error_Handler();
     }
+
+    ST7735_FillScreen(ST7735_BLACK);
+
+    for(int x = 0; x < ST7735_WIDTH; x++) {
+        ST7735_DrawPixel(x, 0, ST7735_RED);
+        ST7735_DrawPixel(x, ST7735_HEIGHT-1, ST7735_RED);
+    }
+
+    for(int y = 0; y < ST7735_HEIGHT; y++) {
+        ST7735_DrawPixel(0, y, ST7735_RED);
+        ST7735_DrawPixel(ST7735_WIDTH-1, y, ST7735_RED);
+    }
+
+    HAL_Delay(3000);
+
+    // Check fonts
+    ST7735_FillScreen(ST7735_BLACK);
+    ST7735_WriteString(0, 0, "Font_7x10, red on black, lorem ipsum dolor sit amet", Font_7x10, ST7735_RED, ST7735_BLACK);
+    ST7735_WriteString(0, 3*10, "Font_11x18, green, lorem ipsum", Font_11x18, ST7735_GREEN, ST7735_BLACK);
+    ST7735_WriteString(0, 3*10+3*18, "Font_16x26", Font_16x26, ST7735_BLUE, ST7735_BLACK);
+    HAL_Delay(2000);
+
+    // Check colors
+    ST7735_FillScreen(ST7735_BLACK);
+    ST7735_WriteString(0, 0, "BLACK", Font_11x18, ST7735_WHITE, ST7735_BLACK);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_BLUE);
+    ST7735_WriteString(0, 0, "BLUE", Font_11x18, ST7735_BLACK, ST7735_BLUE);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_RED);
+    ST7735_WriteString(0, 0, "RED", Font_11x18, ST7735_BLACK, ST7735_RED);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_GREEN);
+    ST7735_WriteString(0, 0, "GREEN", Font_11x18, ST7735_BLACK, ST7735_GREEN);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_CYAN);
+    ST7735_WriteString(0, 0, "CYAN", Font_11x18, ST7735_BLACK, ST7735_CYAN);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_MAGENTA);
+    ST7735_WriteString(0, 0, "MAGENTA", Font_11x18, ST7735_BLACK, ST7735_MAGENTA);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_YELLOW);
+    ST7735_WriteString(0, 0, "YELLOW", Font_11x18, ST7735_BLACK, ST7735_YELLOW);
+    HAL_Delay(500);
+
+    ST7735_FillScreen(ST7735_WHITE);
+    ST7735_WriteString(0, 0, "WHITE", Font_11x18, ST7735_BLACK, ST7735_WHITE);
+    HAL_Delay(500);
 
 
     /* 1s task */
@@ -238,7 +302,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_4B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 10;
+  hsd.Init.ClockDiv = 8;
   /* USER CODE BEGIN SDIO_Init 2 */
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   if (HAL_SD_Init(&hsd) != HAL_OK ){
@@ -251,6 +315,44 @@ static void MX_SDIO_SD_Init(void)
   }
 
   /* USER CODE END SDIO_Init 2 */
+
+}
+
+/**
+  * @brief SPI4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI4_Init(void)
+{
+
+  /* USER CODE BEGIN SPI4_Init 0 */
+
+  /* USER CODE END SPI4_Init 0 */
+
+  /* USER CODE BEGIN SPI4_Init 1 */
+
+  /* USER CODE END SPI4_Init 1 */
+  /* SPI4 parameter configuration*/
+  hspi4.Instance = SPI4;
+  hspi4.Init.Mode = SPI_MODE_MASTER;
+  hspi4.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi4.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi4.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi4.Init.NSS = SPI_NSS_SOFT;
+  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi4.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi4.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi4.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI4_Init 2 */
+
+  /* USER CODE END SPI4_Init 2 */
 
 }
 
@@ -275,12 +377,22 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(led_GPIO_Port, led_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, tft_rs_Pin|tft_rst_Pin|tft_cs_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : led_Pin */
   GPIO_InitStruct.Pin = led_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(led_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : tft_rs_Pin tft_rst_Pin tft_cs_Pin */
+  GPIO_InitStruct.Pin = tft_rs_Pin|tft_rst_Pin|tft_cs_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB6 */
   GPIO_InitStruct.Pin = GPIO_PIN_6;

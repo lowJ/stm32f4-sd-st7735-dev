@@ -1,6 +1,7 @@
-../Core/Src/main.c:60:9:BSP_SD_IsDetected	4	static
-../Core/Src/main.c:71:5:main	4216	static
-../Core/Src/main.c:178:6:SystemClock_Config	88	static
-../Core/Src/main.c:225:13:MX_SDIO_SD_Init	8	static
-../Core/Src/main.c:262:13:MX_GPIO_Init	48	static
-../Core/Src/main.c:304:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:66:9:BSP_SD_IsDetected	4	static
+../Core/Src/main.c:77:5:main	4232	static
+../Core/Src/main.c:242:6:SystemClock_Config	88	static
+../Core/Src/main.c:289:13:MX_SDIO_SD_Init	8	static
+../Core/Src/main.c:326:13:MX_SPI4_Init	8	static
+../Core/Src/main.c:364:13:MX_GPIO_Init	48	static
+../Core/Src/main.c:416:6:Error_Handler	4	static,ignoring_inline_asm
