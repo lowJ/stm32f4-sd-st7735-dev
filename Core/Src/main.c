@@ -122,7 +122,7 @@ int main(void)
     SEGGER_RTT_printf(0, "FS Mount SD!\r\n");
   }
 
-  const char filename[] = "filea.txt";
+  const char filename[] = "amv.raw";
   FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
   if(res == FR_OK)
   {
@@ -136,7 +136,13 @@ int main(void)
 
   uint64_t bytes_read = 0;
   uint64_t last_bytes_read = 0;
-  uint8_t buf[4096];
+  uint8_t buf[50000];
+
+  uint16_t img_buf[128*160] = { 0 };
+  uint16_t pixeli = 0;
+  uint16_t color = 0xf7a2;
+  uint32_t last_total_frames = 0;
+  uint32_t total_frames = 0;
 
   ST7735_Init();
   /* USER CODE END 2 */
@@ -151,13 +157,13 @@ int main(void)
     uint32_t time_ms = HAL_GetTick();
     
     UINT br;
-    res = f_read( &SDFile, buf, 512, &br);
+    res = f_read( &SDFile, buf, 2*128*160, &br);
     if(res == FR_OK)
     {
-      if(br != 512)
+      if(br != 2*128*160)
       {
         SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
-        Error_Handler();
+        //Error_Handler();
       }
       bytes_read += br;
     }
@@ -167,59 +173,78 @@ int main(void)
       Error_Handler();
     }
 
-    ST7735_FillScreen(ST7735_BLACK);
+    // ST7735_FillScreen(ST7735_BLACK);
 
-    for(int x = 0; x < ST7735_WIDTH; x++) {
-        ST7735_DrawPixel(x, 0, ST7735_RED);
-        ST7735_DrawPixel(x, ST7735_HEIGHT-1, ST7735_RED);
-    }
+    // for(int x = 0; x < ST7735_WIDTH; x++) {
+    //     ST7735_DrawPixel(x, 0, ST7735_RED);
+    //     ST7735_DrawPixel(x, ST7735_HEIGHT-1, ST7735_RED);
+    // }
 
-    for(int y = 0; y < ST7735_HEIGHT; y++) {
-        ST7735_DrawPixel(0, y, ST7735_RED);
-        ST7735_DrawPixel(ST7735_WIDTH-1, y, ST7735_RED);
-    }
+    // for(int y = 0; y < ST7735_HEIGHT; y++) {
+    //     ST7735_DrawPixel(0, y, ST7735_RED);
+    //     ST7735_DrawPixel(ST7735_WIDTH-1, y, ST7735_RED);
+    // }
 
-    HAL_Delay(3000);
+    // //HAL_Delay(3000);
 
-    // Check fonts
-    ST7735_FillScreen(ST7735_BLACK);
-    ST7735_WriteString(0, 0, "Font_7x10, red on black, lorem ipsum dolor sit amet", Font_7x10, ST7735_RED, ST7735_BLACK);
-    ST7735_WriteString(0, 3*10, "Font_11x18, green, lorem ipsum", Font_11x18, ST7735_GREEN, ST7735_BLACK);
-    ST7735_WriteString(0, 3*10+3*18, "Font_16x26", Font_16x26, ST7735_BLUE, ST7735_BLACK);
-    HAL_Delay(2000);
+    // // Check fonts
+    // ST7735_FillScreen(ST7735_BLACK);
+    // ST7735_WriteString(0, 0, "Font_7x10, red on black, lorem ipsum dolor sit amet", Font_7x10, ST7735_RED, ST7735_BLACK);
+    // ST7735_WriteString(0, 3*10, "Font_11x18, green, lorem ipsum", Font_11x18, ST7735_GREEN, ST7735_BLACK);
+    // ST7735_WriteString(0, 3*10+3*18, "Font_16x26", Font_16x26, ST7735_BLUE, ST7735_BLACK);
+    // //HAL_Delay(2000);
 
-    // Check colors
-    ST7735_FillScreen(ST7735_BLACK);
-    ST7735_WriteString(0, 0, "BLACK", Font_11x18, ST7735_WHITE, ST7735_BLACK);
-    HAL_Delay(500);
+    // // Check colors
+    // ST7735_FillScreen(ST7735_BLACK);
+    // ST7735_WriteString(0, 0, "BLACK", Font_11x18, ST7735_WHITE, ST7735_BLACK);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_BLUE);
-    ST7735_WriteString(0, 0, "BLUE", Font_11x18, ST7735_BLACK, ST7735_BLUE);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_BLUE);
+    // ST7735_WriteString(0, 0, "BLUE", Font_11x18, ST7735_BLACK, ST7735_BLUE);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_RED);
-    ST7735_WriteString(0, 0, "RED", Font_11x18, ST7735_BLACK, ST7735_RED);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_RED);
+    // ST7735_WriteString(0, 0, "RED", Font_11x18, ST7735_BLACK, ST7735_RED);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_GREEN);
-    ST7735_WriteString(0, 0, "GREEN", Font_11x18, ST7735_BLACK, ST7735_GREEN);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_GREEN);
+    // ST7735_WriteString(0, 0, "GREEN", Font_11x18, ST7735_BLACK, ST7735_GREEN);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_CYAN);
-    ST7735_WriteString(0, 0, "CYAN", Font_11x18, ST7735_BLACK, ST7735_CYAN);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_CYAN);
+    // ST7735_WriteString(0, 0, "CYAN", Font_11x18, ST7735_BLACK, ST7735_CYAN);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_MAGENTA);
-    ST7735_WriteString(0, 0, "MAGENTA", Font_11x18, ST7735_BLACK, ST7735_MAGENTA);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_MAGENTA);
+    // ST7735_WriteString(0, 0, "MAGENTA", Font_11x18, ST7735_BLACK, ST7735_MAGENTA);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_YELLOW);
-    ST7735_WriteString(0, 0, "YELLOW", Font_11x18, ST7735_BLACK, ST7735_YELLOW);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_YELLOW);
+    // ST7735_WriteString(0, 0, "YELLOW", Font_11x18, ST7735_BLACK, ST7735_YELLOW);
+    // //HAL_Delay(500);
 
-    ST7735_FillScreen(ST7735_WHITE);
-    ST7735_WriteString(0, 0, "WHITE", Font_11x18, ST7735_BLACK, ST7735_WHITE);
-    HAL_Delay(500);
+    // ST7735_FillScreen(ST7735_WHITE);
+    // ST7735_WriteString(0, 0, "WHITE", Font_11x18, ST7735_BLACK, ST7735_WHITE);
+    // //HAL_Delay(500);
+
+    // img_buf[pixeli]  = color;
+    // pixeli = pixeli + 1;
+    // if(pixeli >= 168*128)
+    // {
+    //   color = color - 100;
+    //   pixeli = 0;
+    // }
+
+    // for(int i = 0; i < 128*160; i++ )
+    // {
+    //   img_buf[i] = color;
+    //   color--;
+    // }
+
+
+
+  ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)buf);
+  total_frames++;
 
 
     /* 1s task */
@@ -227,9 +252,11 @@ int main(void)
     {
 	    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 	    //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
+      SEGGER_RTT_printf(0, "%uFPS\r\n", total_frames - last_total_frames);
       SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
       last_toggle_ms = time_ms;
       last_bytes_read = bytes_read;
+      last_total_frames = total_frames;
     }
   }
   /* USER CODE END 3 */
@@ -258,9 +285,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
+  RCC_OscInitStruct.PLL.PLLN = 100;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 3;
+  RCC_OscInitStruct.PLL.PLLQ = 5;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -275,7 +302,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -341,7 +368,7 @@ static void MX_SPI4_Init(void)
   hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi4.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi4.Init.NSS = SPI_NSS_SOFT;
-  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi4.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi4.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi4.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
