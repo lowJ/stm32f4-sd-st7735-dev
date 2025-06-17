@@ -104,6 +104,8 @@ int main(void)
   MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+  SEGGER_RTT_ConfigUpBuffer(1, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
+  SEGGER_RTT_ConfigUpBuffer(2, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
   SEGGER_RTT_printf(0, "SD INFO\r\n");
   SEGGER_RTT_printf(0, "Block size %lu\r\n", hsd.SdCard.BlockSize);
@@ -157,7 +159,10 @@ int main(void)
     uint32_t time_ms = HAL_GetTick();
     
     UINT br;
+    //uint32_t start_ms = HAL_GetTick();  
     res = f_read( &SDFile, buf, 2*128*160, &br);
+    //SEGGER_RTT_printf(0, "s%dms\r\n", HAL_GetTick() - start_ms );
+    // sd read is about 22-23ms
     if(res == FR_OK)
     {
       if(br != 2*128*160)
@@ -185,7 +190,10 @@ int main(void)
       Error_Handler();
     }
 
+  //start_ms = HAL_GetTick();
   ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)buf);
+  //SEGGER_RTT_printf(0, "f%dms\r\n", HAL_GetTick() - start_ms );
+  // frame render is 20ms
   total_frames++;
 
     /* 1s task */
