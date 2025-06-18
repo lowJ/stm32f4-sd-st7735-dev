@@ -14,5 +14,5 @@
 ../Core/Src/st7735.c:281:6:ST7735_FillScreen	1
 ../Core/Src/st7735.c:285:6:ST7735_FillScreenFast	1
 ../Core/Src/st7735.c:289:6:ST7735_DrawImage	5
-../Core/Src/st7735.c:300:6:ST7735_InvertColors	2
-../Core/Src/st7735.c:306:6:ST7735_SetGamma	1
+../Core/Src/st7735.c:303:6:ST7735_InvertColors	2
+../Core/Src/st7735.c:309:6:ST7735_SetGamma	1

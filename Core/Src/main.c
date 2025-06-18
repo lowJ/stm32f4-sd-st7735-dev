@@ -47,6 +47,7 @@
 SD_HandleTypeDef hsd;
 
 SPI_HandleTypeDef hspi4;
+DMA_HandleTypeDef hdma_spi4_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -55,6 +56,7 @@ SPI_HandleTypeDef hspi4;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SDIO_SD_Init(void);
 static void MX_SPI4_Init(void);
 /* USER CODE BEGIN PFP */
@@ -66,6 +68,16 @@ static void MX_SPI4_Init(void);
 uint8_t BSP_SD_IsDetected(void)
 {
   return SD_PRESENT;
+}
+
+volatile bool drawing_in_progress = false;
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  drawing_in_progress = false;
+
+#define ST7735_CS_Pin        GPIO_PIN_12
+#define ST7735_CS_GPIO_Port  GPIOB
+  HAL_GPIO_WritePin(ST7735_CS_GPIO_Port, ST7735_CS_Pin, GPIO_PIN_SET);
 }
 
 /* USER CODE END 0 */
@@ -99,6 +111,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_SPI4_Init();
@@ -138,13 +151,13 @@ int main(void)
 
   uint64_t bytes_read = 0;
   uint64_t last_bytes_read = 0;
-  uint8_t buf[50000];
-
-  uint16_t img_buf[128*160] = { 0 };
-  uint16_t pixeli = 0;
-  uint16_t color = 0xf7a2;
   uint32_t last_total_frames = 0;
   uint32_t total_frames = 0;
+
+  /* 4 byte aligned for DMA */
+  /* alternate*/
+  uint8_t buf_swap = 0;
+  uint8_t buf[2][50000] __attribute__((aligned(4)));
 
   ST7735_Init();
   /* USER CODE END 2 */
@@ -157,10 +170,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint32_t time_ms = HAL_GetTick();
+
     
     UINT br;
     //uint32_t start_ms = HAL_GetTick();  
-    res = f_read( &SDFile, buf, 2*128*160, &br);
+    res = f_read( &SDFile, buf[buf_swap], 2*128*160, &br);
     //SEGGER_RTT_printf(0, "s%dms\r\n", HAL_GetTick() - start_ms );
     // sd read is about 22-23ms
     if(res == FR_OK)
@@ -190,10 +204,15 @@ int main(void)
       Error_Handler();
     }
 
+  /* make sure */
+  while( drawing_in_progress );
+
   //start_ms = HAL_GetTick();
-  ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)buf);
+  drawing_in_progress = true;
+  ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
   //SEGGER_RTT_printf(0, "f%dms\r\n", HAL_GetTick() - start_ms );
   // frame render is 20ms
+  buf_swap = (buf_swap + 1) % 2;
   total_frames++;
 
     /* 1s task */
@@ -329,6 +348,22 @@ static void MX_SPI4_Init(void)
   /* USER CODE BEGIN SPI4_Init 2 */
 
   /* USER CODE END SPI4_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
 
 }
 
