@@ -217,7 +217,7 @@ int main(void)
   buf_swap = (buf_swap + 1) % 2;
   total_frames++;
 
-    /* 1s task */
+  //   /* 1s task */
     if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
     {
 	    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
@@ -298,7 +298,7 @@ static void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_4B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 8;
+  hsd.Init.ClockDiv = 12;
   /* USER CODE BEGIN SDIO_Init 2 */
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   if (HAL_SD_Init(&hsd) != HAL_OK ){
