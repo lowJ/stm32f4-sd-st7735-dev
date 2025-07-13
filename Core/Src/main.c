@@ -26,6 +26,7 @@
 #include "st7735.h"
 #include "fonts.h"
 #include "testimg.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,6 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define CYCLE_MAX_NUM_FILES 10
+#define CYCLE_MAX_FILE_NAME 255
 
 /* USER CODE END PD */
 
@@ -78,6 +81,20 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 #define ST7735_CS_Pin        GPIO_PIN_12
 #define ST7735_CS_GPIO_Port  GPIOB
   HAL_GPIO_WritePin(ST7735_CS_GPIO_Port, ST7735_CS_Pin, GPIO_PIN_SET);
+}
+
+bool isButtonPressed()
+{
+  /* active low, pulled up */
+  if (HAL_GPIO_ReadPin( GPIOA, GPIO_PIN_0 ) == GPIO_PIN_SET )
+  {
+    return false;
+
+  }
+  else
+  {
+    return true;
+  }
 }
 
 /* USER CODE END 0 */
@@ -137,18 +154,6 @@ int main(void)
     SEGGER_RTT_printf(0, "FS Mount SD!\r\n");
   }
 
-  const char filename[] = "amv.raw";
-  FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-  if(res == FR_OK)
-  {
-    SEGGER_RTT_printf(0, "File opened");
-  }
-  else
-  {
-    SEGGER_RTT_printf(0, "could not open file %d", res);
-    Error_Handler();
-  }
-
   uint64_t bytes_read = 0;
   uint64_t last_bytes_read = 0;
   uint32_t last_total_frames = 0;
@@ -160,6 +165,66 @@ int main(void)
   uint8_t buf[2][50000] __attribute__((aligned(4)));
 
   ST7735_Init();
+  bool buttonPressedEvent = false;
+  FRESULT res;
+
+  /* get list of videos */
+  const char* cycle_path = "cycle";
+  char cycle_files[CYCLE_MAX_NUM_FILES][CYCLE_MAX_FILE_NAME] = { 0 };
+  size_t cycle_files_num_files = 0;
+  size_t cycle_files_current_file = 0;
+
+    DIR dir;
+ 
+ 
+    res = f_opendir(&dir, cycle_path);
+
+    if (res == FR_OK)
+    {
+      int n = 0;
+      while( 1 )
+      {
+          FILINFO fno;
+          res = f_readdir(&dir, &fno);
+ 
+          /* exit if we listed all the files */
+          if ((res != FR_OK) || (fno.fname[0] == 0))
+            break;
+          
+          if ( n >= CYCLE_MAX_NUM_FILES )
+          {
+            SEGGER_RTT_printf(0 , "Warning: could not process all files in cycle folder\r\n");
+            break;
+          }
+        
+
+ 
+          SEGGER_RTT_printf( 0,  "%s\r\n", fno.fname);
+          strncpy( &cycle_files[n], fno.fname, CYCLE_MAX_FILE_NAME);
+          cycle_files_num_files++;
+          n++;
+      }
+    }
+
+  /* filename + buffer for path */
+  char filename[CYCLE_MAX_FILE_NAME + 50];
+  memset( filename, 0, sizeof(filename) );
+  strcpy(filename, cycle_path);
+  strcat(filename, "/");
+  strcat(filename, &cycle_files[cycle_files_current_file]);
+  res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+  if(res == FR_OK)
+  {
+    SEGGER_RTT_printf(0, "File opened");
+  }
+  else
+  {
+    SEGGER_RTT_printf(0, "could not open file %d", res);
+    Error_Handler();
+  }
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -170,6 +235,34 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint32_t time_ms = HAL_GetTick();
+
+  /* detect press event */
+  static bool prevButtonState;
+  bool currentButtonState = isButtonPressed();
+  if(prevButtonState == true && currentButtonState == false )
+  {
+    buttonPressedEvent = true;
+    SEGGER_RTT_printf(0, "buttonPressed");
+  }
+  prevButtonState = currentButtonState;
+
+  /* service button press event */
+  if(buttonPressedEvent )
+  {
+    /* clear event */
+    buttonPressedEvent = false;
+    f_close( &SDFile ); /* close file */
+
+    /* get new file name */
+    /* if file already open, close it, then open new file */
+
+    cycle_files_current_file = (cycle_files_current_file + 1) % cycle_files_num_files;
+    memset( filename, 0, sizeof(filename) );
+    strcpy(filename, cycle_path);
+    strcat(filename, "/");
+    strcat(filename, &cycle_files[cycle_files_current_file]);
+    res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+  }
 
     
     UINT br;
@@ -398,6 +491,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(led_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : button_Pin */
+  GPIO_InitStruct.Pin = button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(button_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : tft_rs_Pin tft_rst_Pin tft_cs_Pin */
   GPIO_InitStruct.Pin = tft_rs_Pin|tft_rst_Pin|tft_cs_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -405,11 +504,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  /*Configure GPIO pin : buttonB6_Pin */
+  GPIO_InitStruct.Pin = buttonB6_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(buttonB6_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
