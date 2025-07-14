@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -132,6 +133,7 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_SPI4_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
   SEGGER_RTT_ConfigUpBuffer(1, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
@@ -162,7 +164,7 @@ int main(void)
   /* 4 byte aligned for DMA */
   /* alternate*/
   uint8_t buf_swap = 0;
-  uint8_t buf[2][50000] __attribute__((aligned(4)));
+  //uint8_t buf[2][50000] __attribute__((aligned(4)));
 
   ST7735_Init();
   bool buttonPressedEvent = false;
@@ -237,89 +239,89 @@ int main(void)
     uint32_t time_ms = HAL_GetTick();
 
   /* detect press event */
-  static bool prevButtonState;
-  bool currentButtonState = isButtonPressed();
-  if(prevButtonState == true && currentButtonState == false )
-  {
-    buttonPressedEvent = true;
-    SEGGER_RTT_printf(0, "buttonPressed");
-  }
-  prevButtonState = currentButtonState;
+  // static bool prevButtonState;
+  // bool currentButtonState = isButtonPressed();
+  // if(prevButtonState == true && currentButtonState == false )
+  // {
+  //   buttonPressedEvent = true;
+  //   SEGGER_RTT_printf(0, "buttonPressed");
+  // }
+  // prevButtonState = currentButtonState;
 
-  /* service button press event */
-  if(buttonPressedEvent )
-  {
-    /* clear event */
-    buttonPressedEvent = false;
-    f_close( &SDFile ); /* close file */
+  // /* service button press event */
+  // if(buttonPressedEvent )
+  // {
+  //   /* clear event */
+  //   buttonPressedEvent = false;
+  //   f_close( &SDFile ); /* close file */
 
-    /* get new file name */
-    /* if file already open, close it, then open new file */
+  //   /* get new file name */
+  //   /* if file already open, close it, then open new file */
 
-    cycle_files_current_file = (cycle_files_current_file + 1) % cycle_files_num_files;
-    memset( filename, 0, sizeof(filename) );
-    strcpy(filename, cycle_path);
-    strcat(filename, "/");
-    strcat(filename, &cycle_files[cycle_files_current_file]);
-    res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-  }
+  //   cycle_files_current_file = (cycle_files_current_file + 1) % cycle_files_num_files;
+  //   memset( filename, 0, sizeof(filename) );
+  //   strcpy(filename, cycle_path);
+  //   strcat(filename, "/");
+  //   strcat(filename, &cycle_files[cycle_files_current_file]);
+  //   res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+  // }
 
     
-    UINT br;
-    //uint32_t start_ms = HAL_GetTick();  
-    res = f_read( &SDFile, buf[buf_swap], 2*128*160, &br);
-    //SEGGER_RTT_printf(0, "s%dms\r\n", HAL_GetTick() - start_ms );
-    // sd read is about 22-23ms
-    if(res == FR_OK)
-    {
-      if(br != 2*128*160)
-      {
-        SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
-        f_close( &SDFile ); /* close file */
+  //   UINT br;
+  //   //uint32_t start_ms = HAL_GetTick();  
+  //   res = f_read( &SDFile, buf[buf_swap], 2*128*160, &br);
+  //   //SEGGER_RTT_printf(0, "s%dms\r\n", HAL_GetTick() - start_ms );
+  //   // sd read is about 22-23ms
+  //   if(res == FR_OK)
+  //   {
+  //     if(br != 2*128*160)
+  //     {
+  //       SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
+  //       f_close( &SDFile ); /* close file */
 
-        FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-        if(res == FR_OK)
-        {
-          SEGGER_RTT_printf(0, "File opened");
-        }
-        else
-        {
-          SEGGER_RTT_printf(0, "could not open file %d", res);
-          Error_Handler();
-        }
-        //Error_Handler();
-      }
-      bytes_read += br;
-    }
-    else
-    {
-      SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
-      Error_Handler();
-    }
+  //       FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+  //       if(res == FR_OK)
+  //       {
+  //         SEGGER_RTT_printf(0, "File opened");
+  //       }
+  //       else
+  //       {
+  //         SEGGER_RTT_printf(0, "could not open file %d", res);
+  //         Error_Handler();
+  //       }
+  //       //Error_Handler();
+  //     }
+  //     bytes_read += br;
+  //   }
+  //   else
+  //   {
+  //     SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
+  //     Error_Handler();
+  //   }
 
-  /* make sure */
-  while( drawing_in_progress );
+  // /* make sure */
+  // while( drawing_in_progress );
 
-  //start_ms = HAL_GetTick();
-  drawing_in_progress = true;
-  ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
-  //SEGGER_RTT_printf(0, "f%dms\r\n", HAL_GetTick() - start_ms );
-  // frame render is 20ms
-  buf_swap = (buf_swap + 1) % 2;
-  total_frames++;
+  // //start_ms = HAL_GetTick();
+  // drawing_in_progress = true;
+  // ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
+  // //SEGGER_RTT_printf(0, "f%dms\r\n", HAL_GetTick() - start_ms );
+  // // frame render is 20ms
+  // buf_swap = (buf_swap + 1) % 2;
+  // total_frames++;
 
-    /* 1s task */
-    if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
-    {
-	    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	    //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
-      SEGGER_RTT_printf(0, "%uFPS\r\n", total_frames - last_total_frames);
-      SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
-      last_toggle_ms = time_ms;
-      last_bytes_read = bytes_read;
-      last_total_frames = total_frames;
-    }
-  }
+  //   /* 1s task */
+  //   if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
+  //   {
+	//     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	//     //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
+  //     SEGGER_RTT_printf(0, "%uFPS\r\n", total_frames - last_total_frames);
+  //     SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
+  //     last_toggle_ms = time_ms;
+  //     last_bytes_read = bytes_read;
+  //     last_total_frames = total_frames;
+  //   }
+   }
   /* USER CODE END 3 */
 }
 
@@ -340,14 +342,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 100;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 15;
+  RCC_OscInitStruct.PLL.PLLN = 144;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 5;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -363,7 +364,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
