@@ -33,6 +33,7 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+extern SD_HandleTypeDef hsd;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -69,7 +70,7 @@
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
-uint8_t buffer[STORAGE_BLK_NBR*STORAGE_BLK_SIZ];
+//uint8_t buffer[STORAGE_BLK_NBR*STORAGE_BLK_SIZ];
 
 
 /* USER CODE END PRIVATE_DEFINES */
@@ -200,9 +201,13 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
   /* USER CODE BEGIN 3 */
   UNUSED(lun);
 
-  *block_num  = STORAGE_BLK_NBR;
-  *block_size = STORAGE_BLK_SIZ;
-  SEGGER_RTT_printf(0, "GetCapacityFS\r\n");
+      HAL_SD_CardInfoTypeDef info;
+
+  HAL_SD_GetCardInfo(&hsd, &info);
+
+  *block_num =  info.LogBlockNbr  - 1;
+  *block_size = info.LogBlockSize;
+
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -215,8 +220,8 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 int8_t STORAGE_IsReady_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 4 */
-  UNUSED(lun);
-  SEGGER_RTT_printf(0, "IsReady\r\n");
+  //UNUSED(lun);
+  SEGGER_RTT_printf(0, "IsReady%d\r\n", lun);
 
   return (USBD_OK);
   /* USER CODE END 4 */
@@ -253,9 +258,18 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
   // UNUSED(buf);
   // UNUSED(blk_addr);
   // UNUSED(blk_len);
-  SEGGER_RTT_printf(0, "ReadFS lun%d addr%d len%d\r\n", lun, blk_addr, blk_len);
 
-  memcpy(buf, &buffer[blk_addr*STORAGE_BLK_SIZ], blk_len*STORAGE_BLK_SIZ);
+  //SEGGER_RTT_printf(0, "ReadFS lun%d addr%d len%d\r\n", lun, blk_addr, blk_len);
+  // int8_t ret = -1;
+
+  HAL_SD_ReadBlocks(&hsd, buf, blk_addr, blk_len, HAL_MAX_DELAY);
+
+  /* Wait until SD card is ready to use for new operation */
+  while (HAL_SD_GetCardState(&hsd) != HAL_SD_CARD_TRANSFER){}
+  //ret = 0;
+  //return ret;
+
+  //memcpy(buf, &buffer[blk_addr*STORAGE_BLK_SIZ], blk_len*STORAGE_BLK_SIZ);
   
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -278,8 +292,17 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
   // UNUSED(blk_len);
 
     SEGGER_RTT_printf(0, "WriteFS lun%d addr%d len%d\r\n", lun, blk_addr, blk_len);
+   // int8_t ret = -1;
 
-    memcpy(&buffer[blk_addr*STORAGE_BLK_SIZ], buf, blk_len*STORAGE_BLK_SIZ);
+   HAL_SD_WriteBlocks(&hsd, buf, blk_addr, blk_len, HAL_MAX_DELAY);
+
+
+  /* Wait until SD card is ready to use for new operation */
+  while (HAL_SD_GetCardState(&hsd) != HAL_SD_CARD_TRANSFER){}
+  //ret = 0;
+  //return ret;
+
+    //memcpy(&buffer[blk_addr*STORAGE_BLK_SIZ], buf, blk_len*STORAGE_BLK_SIZ);
 
 
   return (USBD_OK);
