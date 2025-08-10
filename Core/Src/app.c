@@ -18,8 +18,24 @@ uint8_t buf[2][50000] __attribute__((aligned(4)));
 #define NUM_VID_FILES_MAX
 
 char* videos[NUM_VID_FILES_MAX] = { 0 };
-char search_query
 
+typedef enum
+{
+
+
+} 
+
+#define SEARCH_QUERY_STR_BUF_SIZE 256
+//TODO: look at fs_lock_ how many of the same files can we open at once? only doing read only 
+typedef struct
+{
+  // FILE DESCRIPTOR
+  bool pause = false;
+  char* current_video;
+  //size_t current_video_num_bytes_read; maybe need later?
+  bool search_active = false;
+  char search_query[SEARCH_QUERY_STR_BUF_SIZE] = { 0 };
+} space_state_t;
 
 void app_mount_fs()
 {
@@ -39,18 +55,6 @@ void app_index_cycle_files()
 
 
 
-
-}
-
-// qmk code will stream over keypresses over serial (only when key pressed)
-// TODO: can user_process_record detect keyrpesses on layers, eg CTRL, numbers, symbols, space,
-void update_search_query_from_ascii_stream( uint8_t* buf, size_t length )
-{
-  while(size_t i = 0; i < length; i++)
-  {
-
-
-  }
 
 }
 
