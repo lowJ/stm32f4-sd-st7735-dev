@@ -227,6 +227,15 @@ int main(void)
     Error_Handler();
   }
 
+  #define SEARCH_QUERY_STR_BUF_SIZE 255
+  /* local variables for search */
+  bool search_active = false;
+  char search_query[SEARCH_QUERY_STR_BUF_SIZE] = { 0 };
+  #define CMD_SEARCH_OPEN 0x01
+  #define CMD_SEARCH_EXIT 0x02
+  #define CMD_SEARCH_UP 0x03
+  #define CMD_SEARCH_DOWN 0x04
+  #define CMD_SEARCH_SELECT 0x05
 
 
   /* USER CODE END 2 */
@@ -268,7 +277,6 @@ int main(void)
     res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
   }
 
-    
     UINT br;
     //uint32_t start_ms = HAL_GetTick();  
     res = f_read( &SDFile, buf[buf_swap], 2*128*160, &br);
@@ -300,6 +308,71 @@ int main(void)
       SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
       Error_Handler();
     }
+
+    /* TODO: read all bytes */
+    char c = 0;
+    HAL_UART_Receive(&huart2, &c, 1, 0);
+    /* TODO: move this to a function later */
+    if( c != 0)
+    {
+      SEGGER_RTT_printf(0, "got char %d", c);
+      switch ( c )
+      {
+      case CMD_SEARCH_OPEN:
+        search_active = true; 
+        break;
+      case CMD_SEARCH_EXIT:
+        search_active = false;
+        //TODO: maybe we shouldn't delete??
+        //clear search query
+        memset( search_query, 0, SEARCH_QUERY_STR_BUF_SIZE);
+        break;
+      case CMD_SEARCH_UP:
+      /* TODO: */
+        break;
+      case CMD_SEARCH_DOWN:
+      /* TODO: */
+        break;
+      case CMD_SEARCH_SELECT:
+      /* TODO: */
+        break;
+
+      case 'A':
+        f_close( &SDFile ); /* close file */
+
+        /* get new file name */
+        /* if file already open, close it, then open new file */
+
+        cycle_files_current_file = (cycle_files_current_file + 1) % cycle_files_num_files;
+        memset( filename, 0, sizeof(filename) );
+        strcpy(filename, cycle_path);
+        strcat(filename, "/");
+        strcat(filename, &cycle_files[cycle_files_current_file]);
+        res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+        break;
+      case 'S':
+        f_close( &SDFile ); /* close file */
+
+        /* get new file name */
+        /* if file already open, close it, then open new file */
+
+        cycle_files_current_file = (cycle_files_current_file - 1 + cycle_files_num_files) % cycle_files_num_files;
+        memset( filename, 0, sizeof(filename) );
+        strcpy(filename, cycle_path);
+        strcat(filename, "/");
+        strcat(filename, &cycle_files[cycle_files_current_file]);
+        res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
+        break;
+
+      
+      default:
+        //assume this is a valid ascii filename/path char
+        // TODO: we should do our own checking / filtering here
+        break;
+      }
+    }
+
+    
 
   /* make sure */
   while( drawing_in_progress );
