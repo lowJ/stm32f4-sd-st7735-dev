@@ -21,7 +21,7 @@ Main Loop
 Debug Prints
 - Prints done with Segger RTT. Requires a RTT supported debug probe
 
-Currently 46 FPS Video playback can be achieved, this is with a blocking FatFS read from the micro SD and DMA frame display. Currently the frame display takes about 20ms and read from the frame read from the micro sd take about 22-23ms, so the 46FPS number makes sense.
+Currently 46 FPS Video playback can be achieved, this is with a blocking FatFS read from the micro SD and DMA frame display. Currently the frame display takes about 20ms and read from the frame read from the micro sd take about 22-23ms. Since we DMA the frame display, the bottle neck is the 22-23ms SDIO transfer, so the 46FPS number makes sense  eg 1000ms/~22ms.
 
 Things to try to improve fps
 - Larger SDIO transfer could be faster. Could try larger SDIO trasnfer with DMA and have a larger buffer in RAM to store multiple frames.
