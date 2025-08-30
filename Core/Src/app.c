@@ -12,12 +12,25 @@
 
 #define SEARCH_QUERY_BUFFER_SIZE 64
 
+#define SCREEN_WIDTH 160
+#define CHAR_WIDTH 7
+#define NUM_CHAR_FIT_ON_SCREEN_WIDTH SCREEN_WIDTH / CHAR_WIDTH
+const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
+
+  #define CMD_SEARCH_OPEN 0x01
+  #define CMD_SEARCH_EXIT 0x02
+  #define CMD_SEARCH_UP 0x03
+  #define CMD_SEARCH_DOWN 0x04
+  #define CMD_SEARCH_SELECT 0x05
+
 /* global values */
 char* video_list[VIDEO_LIST_MAX_NUM_ITEMS] = { 0 };
 uint16_t video_list_num_items = 0;
 
 static bool search_active = false;
-static char search_query[SEARCH_QUERY_BUFFER_SIZE] = { 0 };
+
+/* +1 for null terminator */
+static char search_query[NUM_CHAR_FIT_ON_SCREEN_WIDTH + 1] = { 0 };
 static size_t cursor_position = 0; // in the search list 
 
 /* TODO: use correct num pixels */
@@ -117,177 +130,217 @@ void app(){
     }
 
     //loop
+    
     while(1)
     {
-        SEGGER_RTT_printf(0,"helloworld\r\n");
-        HAL_Delay( 5000);
+        char c = 0;
+        HAL_UART_Receive(&huart2, &c, 1, 0);
+        //process incoming bytes/commands
+        if( c == 0)
+        {
+            /* nothing */
 
-    };
-    
-    //while(1)
-    //{
-    //    //process incoming bytes/commands
-    //    if( c == TOGGLE_SEARCH )
-    //    {
-    //        if( search_active )
-    //        {
-    //            //close existing search
+        }
+        else if( c == CMD_SEARCH_OPEN || c == CMD_SEARCH_EXIT)
+        {
+            if( search_active )
+            {
+                SEGGER_RTT_printf(0, "Exiting Search\r\n");
 
-    //            //zero search_query
-    //            memset()
+                //close existing search
 
-    //            search_active = false;
+                //zero search_query
+                //memset()
 
-    //        }
-    //        else
-    //        {
-    //            // open search up 
-    //            search_active = true;
-    //        }
-    //    }
-    //    elif( c == SELECT_UP)
-    //    {
-    //        //bounds check
-    //        cursor_position--;
+                search_active = false;
 
-    //    }
-    //    elif( c == SELECT_DOWN)
-    //    {
-    //        //bounds check
-    //        cursor_position++
-    //    }
-    //    elif( c == SELECT_ENTER)
-    //    {
+            }
+            else
+            {
+                SEGGER_RTT_printf(0, "Opening Search\r\n");
+                // open search up 
+                search_active = true;
+            }
+        }
+        else if( c == 'A') //else if( c == CMD_SEARCH_UP)
+        {
+            //bounds check
+            cursor_position--;
+            SEGGER_RTT_printf(0, "Search Cursor Up\r\n");
 
-    //    }
-    //    else
-    //    {
-    //        /* c is valid filename/path char */
-    //        //add char to search_query, if bkspc delete char from search_query
+        }
+        //else if( c == CMD_SEARCH_DOWN)
+        else if( c == 'S')
+        {
+            //bounds check
+            cursor_position++;
+            SEGGER_RTT_printf(0, "Search Cursor Down\r\n");
+        }
+        else if( c == 'Q') //else if( c == CMD_SEARCH_SELECT)
+        {
+            SEGGER_RTT_printf(0, "Select Item\r\n");
 
-    //    }
+        }
+        else
+        {
+            if( c == 0x08)
+            {
+                SEGGER_RTT_printf(0," backspace\r\n");
 
+            }
+            else
+            {
+                SEGGER_RTT_printf(0," char %c\r\n", c );
 
+            }
+            /* c is valid filename/path char */
+            //add char to search_query, if bkspc delete char from search_query
+            
+            /* TODO: check for valid char */
+            size_t len = strlen(search_query);
+            if( c == 0x08 )
+            {
+                if(len > 0)
+                {
+                    search_query[len - 1] = '\0';
+                }
 
-    //    if( search_active )
-    //    {
-    //        //run query against video_list
-    //        // ranks earch entry in video_list
-    //        // quick sort the ranked video_list
-    //        //
+                ST7735_FillScreenFast( 65535);
+            }
+            else
+            {
+                if( len < (sizeof(search_query) - 1) )
+                {
+                    // append char
+                    search_query[len] = c;
+                }
+            }
 
-    //        // array to store a string and its score, matching against the search_query
-    //        string_score_pair_t video_list_scores[VIDEO_LIST_MAX_NUM_ITEMS];
-
-    //        // score each string
-    //        for( size_t i = 0; i < video_list_num_items; i++)
-    //        {
-    //            video_list_scores[i].s = video_list[i];
-    //            video_list_scores[i].score = my_scoring_func(video_list[i], search_query);
-    //        }
-
-    //        // sort
-    //        qsort( video_list_scores, video_list_num_items, sizeof(string_score_pair_t), string_score_pair_cmp);
-
-    //        //draw the search box
-    //        //use cursor_position to determine which filenames to list
-
-    //        // figure out how many rows we can fit on screen for given font size
-    //        #define SCREEN_HEIGHT 128
-    //        #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
-    //        const size_t num_rows_fit_on_screen = SCREEN_HEIGHT / CHAR_HEIGHT; /* char height */
-
-    //        #define SCREEN_WIDTH 160
-    //        #define CHAR_WIDTH 7
-    //        const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
-
-    //        #define TEXT_COLOR 255
-    //        #define TEXT_BGCOLOR 0
-
-    //        //figure out which strings to show.
-    //        //prioritize cursor being in center, but
-    //        
-    //        //7 rows fit on screen
-    //        3
-    //        //aaaa
-    //        //bbbb
-    //        //cccc
-    //        //dddd
-    //        //eeee
-    //        //ffff
-    //        //gggg
-
-
-    //        if( cursor_position < (num_rows_fit_on_screen / 2) )
-    //        {
-    //            //curosr near top of list
-    //            for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-    //            {
-    //                char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-    //                file_path_string_short( short_path, video_list_scores[i].s, string_length_screen_width);
-
-
-    //                ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
-
-
-    //            }
-    //        
-
-    //        }
-    //        else if( cursor_position > video_list_num_items - (num_rows_fit_on_screen / 2))
-    //        {
-    //            //cursor near bottom of list
-    //            for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-    //            {
-    //                char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-    //                file_path_string_short( short_path, video_list_scores[i#TODO:].s, string_length_screen_width);
-
-
-    //                ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
-
-
-    //            }
-
-    //        }
-    //        else
-    //        {
-    //            for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-    //            {
-    //                char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-    //                file_path_string_short( short_path, video_list_scores[cursor_position + i - (num_rows_fit_on_screen/2)].s, string_length_screen_width);
-
-
-    //                ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
-
-
-    //            }
-    //            //curso
-    //        }
+            ST7735_WriteString(0,0, search_query, Font_7x10, 0, 65535 );
+        }
 
 
 
-    //    }
-    //    else
-    //    {
-    //        //read_frame_from_context
-    //        int ret = read_frame_from_context( &wc, &frame_buffer[frame_buffer_swap]);
-    //        if( ret == SUCCESS )
-    //        {
-    //        //ST7735_DrawImage()
-    //        }
-    //        elif( ret == 1) //1 = Failure due to EOF
-    //        {
-    //            //loop, close fd and re open fd
-    //            // better way to do this?
-    //        }
-    //        else
-    //        {
-    //            //print error 
-    //        }
+
+        if( search_active )
+        {
+            //run query against video_list
+            // ranks earch entry in video_list
+            // quick sort the ranked video_list
+            //
+
+            // array to store a string and its score, matching against the search_query
+            string_score_pair_t video_list_scores[VIDEO_LIST_MAX_NUM_ITEMS];
+
+            // score each string
+            for( size_t i = 0; i < video_list_num_items; i++)
+            {
+                video_list_scores[i].s = video_list[i];
+                video_list_scores[i].score = my_scoring_func(video_list[i], search_query);
+            }
+
+            // sort
+            qsort( video_list_scores, video_list_num_items, sizeof(string_score_pair_t), string_score_pair_cmp);
+
+            //draw the search box
+            //use cursor_position to determine which filenames to list
+
+            // figure out how many rows we can fit on screen for given font size
+            #define SCREEN_HEIGHT 128
+            #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
+            const size_t num_rows_fit_on_screen = SCREEN_HEIGHT / CHAR_HEIGHT; /* char height */
+
+            #define SCREEN_WIDTH 160
+            #define CHAR_WIDTH 7
+            const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
+
+            #define TEXT_COLOR 255
+            #define TEXT_BGCOLOR 0
+
+            //figure out which strings to show.
+            //prioritize cursor being in center, but
+            
+            //7 rows fit on screen
+            3
+            //aaaa
+            //bbbb
+            //cccc
+            //dddd
+            //eeee
+            //ffff
+            //gggg
 
 
-    //    }
-    //}
+            if( cursor_position < (num_rows_fit_on_screen / 2) )
+            {
+                //curosr near top of list
+                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+                {
+                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+                    file_path_string_short( short_path, video_list_scores[i].s, string_length_screen_width);
+
+
+                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+
+
+                }
+            
+
+            }
+            else if( cursor_position > video_list_num_items - (num_rows_fit_on_screen / 2))
+            {
+                //cursor near bottom of list
+                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+                {
+                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+                    file_path_string_short( short_path, video_list_scores[i#TODO:].s, string_length_screen_width);
+
+
+                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+
+
+                }
+
+            }
+            else
+            {
+                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+                {
+                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+                    file_path_string_short( short_path, video_list_scores[cursor_position + i - (num_rows_fit_on_screen/2)].s, string_length_screen_width);
+
+
+                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+
+
+                }
+                //curso
+            }
+
+
+
+        }
+        else
+        {
+            //read_frame_from_context
+            int ret = read_frame_from_context( &wc, &frame_buffer[frame_buffer_swap]);
+            if( ret == SUCCESS )
+            {
+            //ST7735_DrawImage()
+            }
+            elif( ret == 1) //1 = Failure due to EOF
+            {
+                //loop, close fd and re open fd
+                // better way to do this?
+            }
+            else
+            {
+                //print error 
+            }
+
+
+        }
+    }
 }
 
 
