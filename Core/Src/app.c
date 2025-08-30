@@ -112,12 +112,17 @@ void app(){
     SEGGER_RTT_printf(0, "Indexed %d videos:\r\n", video_list_num_items); 
     for(size_t i = 0; i < video_list_num_items; i++)
     {
+        HAL_Delay( 10 );
         SEGGER_RTT_printf(0, "%d, %s\r\n", i, video_list[i]);
     }
 
     //loop
     while(1)
-    {};
+    {
+        SEGGER_RTT_printf(0,"helloworld\r\n");
+        HAL_Delay( 5000);
+
+    };
     
     //while(1)
     //{
