@@ -141,93 +141,6 @@ int main(void)
   SEGGER_RTT_ConfigUpBuffer(1, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
   SEGGER_RTT_ConfigUpBuffer(2, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
-  SEGGER_RTT_printf(0, "SD INFO\r\n");
-  SEGGER_RTT_printf(0, "Block size %lu\r\n", hsd.SdCard.BlockSize);
-  SEGGER_RTT_printf(0, "Block num %lu\r\n", hsd.SdCard.BlockNbr);
-  SEGGER_RTT_printf(0, "Card size %lu GB\r\n", ((uint64_t)hsd.SdCard.BlockSize * (uint64_t)hsd.SdCard.BlockNbr) / 1000000000 );
-
-  uint32_t last_toggle_ms = HAL_GetTick();
-  uint32_t blink_duration_ms = 1000;
-  
-  if( f_mount(&SDFatFS, (TCHAR const*) SDPath, 0) != FR_OK ) {
-    SEGGER_RTT_printf(0, "Could not mount disk\r\n");
-    Error_Handler();
-  }
-  else
-  {
-    SEGGER_RTT_printf(0, "FS Mount SD!\r\n");
-  }
-
-  uint64_t bytes_read = 0;
-  uint64_t last_bytes_read = 0;
-  uint32_t last_total_frames = 0;
-  uint32_t total_frames = 0;
-
-  /* 4 byte aligned for DMA */
-  /* alternate*/
-  uint8_t buf_swap = 0;
-  uint8_t buf[2][50000] __attribute__((aligned(4)));
-
-  ST7735_Init();
-  bool buttonPressedEvent = false;
-  FRESULT res;
-
-  /* get list of videos */
-  const char* cycle_path = "cycle";
-  char cycle_files[CYCLE_MAX_NUM_FILES][CYCLE_MAX_FILE_NAME] = { 0 };
-  size_t cycle_files_num_files = 0;
-  size_t cycle_files_current_file = 0;
-
-    DIR dir;
- 
- 
-    res = f_opendir(&dir, cycle_path);
-
-    if (res == FR_OK)
-    {
-      int n = 0;
-      while( 1 )
-      {
-          FILINFO fno;
-          res = f_readdir(&dir, &fno);
- 
-          /* exit if we listed all the files */
-          if ((res != FR_OK) || (fno.fname[0] == 0))
-            break;
-          
-          if ( n >= CYCLE_MAX_NUM_FILES )
-          {
-            SEGGER_RTT_printf(0 , "Warning: could not process all files in cycle folder\r\n");
-            break;
-          }
-        
-
- 
-          SEGGER_RTT_printf( 0,  "%s\r\n", fno.fname);
-          strncpy( &cycle_files[n], fno.fname, CYCLE_MAX_FILE_NAME);
-          cycle_files_num_files++;
-          n++;
-      }
-    }
-
-  /* filename + buffer for path */
-  char filename[CYCLE_MAX_FILE_NAME + 50];
-  memset( filename, 0, sizeof(filename) );
-  strcpy(filename, cycle_path);
-  strcat(filename, "/");
-  strcat(filename, &cycle_files[cycle_files_current_file]);
-  res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-  if(res == FR_OK)
-  {
-    SEGGER_RTT_printf(0, "File opened");
-  }
-  else
-  {
-    SEGGER_RTT_printf(0, "could not open file %d", res);
-    Error_Handler();
-  }
-
-
 
   /* USER CODE END 2 */
 
@@ -235,94 +148,33 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    app();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    uint32_t time_ms = HAL_GetTick();
 
   /* detect press event */
-  static bool prevButtonState;
-  bool currentButtonState = isButtonPressed();
-  if(prevButtonState == true && currentButtonState == false )
-  {
-    buttonPressedEvent = true;
-    SEGGER_RTT_printf(0, "buttonPressed");
-  }
-  prevButtonState = currentButtonState;
 
   /* service button press event */
-  if(buttonPressedEvent )
-  {
-    /* clear event */
-    buttonPressedEvent = false;
-    f_close( &SDFile ); /* close file */
-
-    /* get new file name */
-    /* if file already open, close it, then open new file */
-
-    cycle_files_current_file = (cycle_files_current_file + 1) % cycle_files_num_files;
-    memset( filename, 0, sizeof(filename) );
-    strcpy(filename, cycle_path);
-    strcat(filename, "/");
-    strcat(filename, &cycle_files[cycle_files_current_file]);
-    res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-  }
-
-    
-    UINT br;
-    //uint32_t start_ms = HAL_GetTick();  
-    res = f_read( &SDFile, buf[buf_swap], 2*128*160, &br);
-    //SEGGER_RTT_printf(0, "s%dms\r\n", HAL_GetTick() - start_ms );
-    // sd read is about 22-23ms
-    if(res == FR_OK)
-    {
-      if(br != 2*128*160)
-      {
-        SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
-        f_close( &SDFile ); /* close file */
-
-        FRESULT res = f_open(&SDFile,filename, FA_OPEN_EXISTING | FA_READ );
-        if(res == FR_OK)
-        {
-          SEGGER_RTT_printf(0, "File opened");
-        }
-        else
-        {
-          SEGGER_RTT_printf(0, "could not open file %d", res);
-          Error_Handler();
-        }
-        //Error_Handler();
-      }
-      bytes_read += br;
-    }
-    else
-    {
-      SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
-      Error_Handler();
-    }
-
   /* make sure */
-  while( drawing_in_progress );
 
-  //start_ms = HAL_GetTick();
-  drawing_in_progress = true;
-  ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
+  //ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
   //SEGGER_RTT_printf(0, "f%dms\r\n", HAL_GetTick() - start_ms );
   // frame render is 20ms
-  buf_swap = (buf_swap + 1) % 2;
-  total_frames++;
+  //buf_swap = (buf_swap + 1) % 2;
+  //total_frames++;
 
     /* 1s task */
-    if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
-    {
-	    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	    //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
-      SEGGER_RTT_printf(0, "%uFPS\r\n", total_frames - last_total_frames);
-      SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
-      last_toggle_ms = time_ms;
-      last_bytes_read = bytes_read;
-      last_total_frames = total_frames;
-    }
+    //if( ( time_ms - last_toggle_ms) >= blink_duration_ms )
+    //{
+	   // HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	   // //SEGGER_RTT_printf(0, "HELLO WORLD %d\r\n", time_ms);
+    //  SEGGER_RTT_printf(0, "%uFPS\r\n", total_frames - last_total_frames);
+    //  SEGGER_RTT_printf(0, "Read %uKBps\r\n", (bytes_read - last_bytes_read)/1000);
+    //  last_toggle_ms = time_ms;
+    //  last_bytes_read = bytes_read;
+    //  last_total_frames = total_frames;
+    //}
   }
   /* USER CODE END 3 */
 }
