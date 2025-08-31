@@ -261,7 +261,7 @@ void app(){
             //prioritize cursor being in center, but
             
             //7 rows fit on screen
-            3
+            //3
             //aaaa
             //bbbb
             //cccc
