@@ -166,7 +166,11 @@ void app(){
         else if( c == 'A') //else if( c == CMD_SEARCH_UP)
         {
             //bounds check
-            cursor_position--;
+            if(cursor_position > 0 )
+            {
+                cursor_position--;
+                query_updated_this_cycle = true;
+            }
             SEGGER_RTT_printf(0, "Search Cursor Up\r\n");
 
         }
@@ -175,6 +179,7 @@ void app(){
         {
             //bounds check
             cursor_position++;
+            query_updated_this_cycle = true;
             SEGGER_RTT_printf(0, "Search Cursor Down\r\n");
         }
         else if( c == 'Q') //else if( c == CMD_SEARCH_SELECT)
@@ -217,9 +222,8 @@ void app(){
                     search_query[len] = c;
                 }
             }
-            ST7735_FillScreenFast( 65535);
+            //ST7735_FillScreenFast( 65535);
 
-            ST7735_WriteString(0,0, search_query, Font_7x10, 0, 65535 );
         }
 
 
@@ -228,6 +232,8 @@ void app(){
         //search_active = false;
         if( search_active && query_updated_this_cycle )
         {
+            ST7735_FillScreenFast( 65535);
+            ST7735_WriteString(0,0, search_query, Font_7x10, 0, 65535 );
             //run query against video_list
             // ranks earch entry in video_list
             // quick sort the ranked video_list
@@ -245,19 +251,6 @@ void app(){
             //{
             //    SEGGER_RTT_printf(0, "%s\r\n", video_list_filtered[j]);
             //}
-            //while(1);
-           // // score each string
-           // //for( size_t i = 0; i < video_list_num_items; i++)
-           // //{
-           // //    video_list_scores[i].s = video_list[i];
-           // //    video_list_scores[i].score = my_scoring_func(video_list[i], search_query);
-           // //}
-
-           // //// sort
-           // //qsort( video_list_scores, video_list_num_items, sizeof(string_score_pair_t), string_score_pair_cmp);
-
-           // //draw the search box
-           // //use cursor_position to determine which filenames to list
 
            // // figure out how many rows we can fit on screen for given font size
            #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
@@ -273,6 +266,13 @@ void app(){
 
            #define TEXT_COLOR 0
            #define TEXT_BGCOLOR 65535
+
+           // TOOD: move later
+           //bounds check on cursor
+           if(cursor_position >= video_list_filtered_len )
+           {
+            cursor_position = video_list_filtered_len - 1;
+           }
 
            //figure out which strings to show.
            //prioritize cursor being in center, but
@@ -297,37 +297,63 @@ void app(){
                    file_path_string_short( short_path, video_list_filtered[i], string_length_screen_width);
 
 
-                   ST7735_WriteString(SEARCH_LIST_X_ORIGIN , SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+                   if(cursor_position == i)
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN , SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_BGCOLOR, TEXT_COLOR);
+
+                   }
+                   else
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN , SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR);
+
+                   }
 
 
                }
            
 
            }
-           else if( cursor_position > video_list_num_items - (num_rows_fit_on_screen / 2))
+           else if( cursor_position >= video_list_filtered_len - (num_rows_fit_on_screen / 2))
            {
+            SEGGER_RTT_printf(0, "bottom");
                //cursor near bottom of list
                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
                {
                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-                   file_path_string_short( short_path, video_list_filtered[cursor_position + i - num_rows_fit_on_screen], string_length_screen_width);
+                   file_path_string_short( short_path, video_list_filtered[video_list_filtered_len + i - num_rows_fit_on_screen], string_length_screen_width);
 
 
-                   ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+                   if(cursor_position == i + video_list_filtered_len - num_rows_fit_on_screen)
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN, SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_BGCOLOR, TEXT_COLOR);
+                   }
+                   else
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN , SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR);
 
+                   }
 
                }
 
            }
            else
            {
-               for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+            SEGGER_RTT_printf(0, "mid");
+               for( int i = 0; i < num_rows_fit_on_screen; i++)
                {
                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
                    file_path_string_short( short_path, video_list_filtered[cursor_position + i - (num_rows_fit_on_screen/2)], string_length_screen_width);
 
 
-                   ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+                   if(i == (int)(num_rows_fit_on_screen/2))
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN, SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_BGCOLOR, TEXT_COLOR);
+                   }
+                   else
+                   {
+                    ST7735_WriteString(SEARCH_LIST_X_ORIGIN , SEARCH_LIST_Y_ORIGIN + (CHAR_HEIGHT * i), short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR);
+
+                   }
 
 
                }
