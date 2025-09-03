@@ -241,10 +241,10 @@ void app(){
             SEGGER_RTT_printf(0, "FuzzyFind\r\n");
             size_t video_list_filtered_len = fuzzy_find( video_list, video_list_num_items, search_query, &video_list_filtered, video_list_num_items );
             SEGGER_RTT_printf(0, "ff %d\r\n", video_list_filtered_len);
-            for(int j = 0; j < video_list_filtered_len; j++)
-            {
-                SEGGER_RTT_printf(0, "%s\r\n", video_list_filtered[j]);
-            }
+            //for(int j = 0; j < video_list_filtered_len; j++)
+            //{
+            //    SEGGER_RTT_printf(0, "%s\r\n", video_list_filtered[j]);
+            //}
             //while(1);
            // // score each string
            // //for( size_t i = 0; i < video_list_num_items; i++)
@@ -262,14 +262,14 @@ void app(){
            // // figure out how many rows we can fit on screen for given font size
            #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
            #define SEARCH_LIST_X_ORIGIN 0
-           #define SEARCH_LIST_Y_ORIGIN 0 + (CHAR_HEIGHT * 1)
-           #define SEARCH_LIST_HEIGHT  128 - (CHAR_HEIGHT * 1) /* minus the search query box height */
-           #define SEARCH_LIST_WIDTH  160 //TODO: macro 
+           #define SEARCH_LIST_Y_ORIGIN (0 + (CHAR_HEIGHT * 1))
+           #define SEARCH_LIST_HEIGHT  (128 - (CHAR_HEIGHT * 1)) /* minus the search query box height */
+           #define SEARCH_LIST_WIDTH  (160) //TODO: macro 
 
-           const size_t num_rows_fit_on_screen = SEARCH_LIST_HEIGHT / CHAR_HEIGHT; /* char height */
+           size_t num_rows_fit_on_screen = SEARCH_LIST_HEIGHT / CHAR_HEIGHT; /* char height */
 
            #define CHAR_WIDTH 7 /* this determiend by font */
-           const size_t string_length_screen_width = SEARCH_LIST_WIDTH / CHAR_WIDTH;
+           size_t string_length_screen_width = SEARCH_LIST_WIDTH / CHAR_WIDTH;
 
            #define TEXT_COLOR 0
            #define TEXT_BGCOLOR 65535
