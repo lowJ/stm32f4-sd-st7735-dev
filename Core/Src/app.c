@@ -133,6 +133,7 @@ void app(){
     
     while(1)
     {
+        bool query_updated_this_cycle = false;
         char c = 0;
         HAL_UART_Receive(&huart2, &c, 1, 0);
         //process incoming bytes/commands
@@ -195,6 +196,8 @@ void app(){
             }
             /* c is valid filename/path char */
             //add char to search_query, if bkspc delete char from search_query
+
+            query_updated_this_cycle = true;
             
             /* TODO: check for valid char */
             size_t len = strlen(search_query);
@@ -222,7 +225,7 @@ void app(){
 
 
 
-        if( search_active )
+        if( search_active && query_updated_this_cycle )
         {
             //run query against video_list
             // ranks earch entry in video_list
@@ -230,113 +233,123 @@ void app(){
             //
 
             // array to store a string and its score, matching against the search_query
-            string_score_pair_t video_list_scores[VIDEO_LIST_MAX_NUM_ITEMS];
 
-            // score each string
-            for( size_t i = 0; i < video_list_num_items; i++)
+            char** video_list_filtered; //TODO: MAKE SURE TO FREE THIS
+
+
+            SEGGER_RTT_printf(0, "FuzzyFind\r\n");
+            size_t result_count = fuzzy_find( video_list, video_list_num_items, search_query, &video_list_filtered, video_list_num_items );
+            SEGGER_RTT_printf(0, "ff %d\r\n", result_count);
+            for(int j = 0; j < result_count; j++)
             {
-                video_list_scores[i].s = video_list[i];
-                video_list_scores[i].score = my_scoring_func(video_list[i], search_query);
+                SEGGER_RTT_printf(0, "%s\r\n", video_list_filtered[j]);
             }
+           // // score each string
+           // //for( size_t i = 0; i < video_list_num_items; i++)
+           // //{
+           // //    video_list_scores[i].s = video_list[i];
+           // //    video_list_scores[i].score = my_scoring_func(video_list[i], search_query);
+           // //}
 
-            // sort
-            qsort( video_list_scores, video_list_num_items, sizeof(string_score_pair_t), string_score_pair_cmp);
+           // //// sort
+           // //qsort( video_list_scores, video_list_num_items, sizeof(string_score_pair_t), string_score_pair_cmp);
 
-            //draw the search box
-            //use cursor_position to determine which filenames to list
+           // //draw the search box
+           // //use cursor_position to determine which filenames to list
 
-            // figure out how many rows we can fit on screen for given font size
-            #define SCREEN_HEIGHT 128
-            #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
-            const size_t num_rows_fit_on_screen = SCREEN_HEIGHT / CHAR_HEIGHT; /* char height */
+           // // figure out how many rows we can fit on screen for given font size
+           // #define SCREEN_HEIGHT 128
+           // #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
+           // const size_t num_rows_fit_on_screen = SCREEN_HEIGHT / CHAR_HEIGHT; /* char height */
 
-            #define SCREEN_WIDTH 160
-            #define CHAR_WIDTH 7
-            const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
+           // #define SCREEN_WIDTH 160
+           // #define CHAR_WIDTH 7
+           // const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
 
-            #define TEXT_COLOR 255
-            #define TEXT_BGCOLOR 0
+           // #define TEXT_COLOR 255
+           // #define TEXT_BGCOLOR 0
 
-            //figure out which strings to show.
-            //prioritize cursor being in center, but
-            
-            //7 rows fit on screen
-            //3
-            //aaaa
-            //bbbb
-            //cccc
-            //dddd
-            //eeee
-            //ffff
-            //gggg
-
-
-            if( cursor_position < (num_rows_fit_on_screen / 2) )
-            {
-                //curosr near top of list
-                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-                {
-                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-                    file_path_string_short( short_path, video_list_scores[i].s, string_length_screen_width);
+           // //figure out which strings to show.
+           // //prioritize cursor being in center, but
+           // 
+           // //7 rows fit on screen
+           // //3
+           // //aaaa
+           // //bbbb
+           // //cccc
+           // //dddd
+           // //eeee
+           // //ffff
+           // //gggg
 
 
-                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+           // if( cursor_position < (num_rows_fit_on_screen / 2) )
+           // {
+           //     //curosr near top of list
+           //     for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+           //     {
+           //         char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+           //         file_path_string_short( short_path, video_list_filtered[i], string_length_screen_width);
 
 
-                }
-            
-
-            }
-            else if( cursor_position > video_list_num_items - (num_rows_fit_on_screen / 2))
-            {
-                //cursor near bottom of list
-                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-                {
-                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-                    file_path_string_short( short_path, video_list_scores[i#TODO:].s, string_length_screen_width);
+           //         ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
 
 
-                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+           //     }
+           // 
+
+           // }
+           // else if( cursor_position > video_list_num_items - (num_rows_fit_on_screen / 2))
+           // {
+           //     //cursor near bottom of list
+           //     for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+           //     {
+           //         char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+           //         file_path_string_short( short_path, video_list_filtered[cursor_position + i - num_rows_fit_on_screen], string_length_screen_width);
 
 
-                }
-
-            }
-            else
-            {
-                for( size_t i = 0; i < num_rows_fit_on_screen; i++)
-                {
-                    char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
-                    file_path_string_short( short_path, video_list_scores[cursor_position + i - (num_rows_fit_on_screen/2)].s, string_length_screen_width);
+           //         ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
 
 
-                    ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font7x10, TEXT_COLOR, TEXT_BGCOLOR  );
+           //     }
+
+           // }
+           // else
+           // {
+           //     for( size_t i = 0; i < num_rows_fit_on_screen; i++)
+           //     {
+           //         char short_path[ SCREEN_WIDTH / CHAR_WIDTH ] ;
+           //         file_path_string_short( short_path, video_list_filtered[cursor_position + i - (num_rows_fit_on_screen/2)], string_length_screen_width);
 
 
-                }
-                //curso
-            }
+           //         ST7735_WriteString(0,CHAR_HEIGHT * i, short_path, Font_7x10, TEXT_COLOR, TEXT_BGCOLOR  );
 
 
+           //     }
+           //     //curso
+           // }
+
+
+           free(video_list_filtered);
 
         }
         else
         {
-            //read_frame_from_context
-            int ret = read_frame_from_context( &wc, &frame_buffer[frame_buffer_swap]);
-            if( ret == SUCCESS )
-            {
-            //ST7735_DrawImage()
-            }
-            elif( ret == 1) //1 = Failure due to EOF
-            {
-                //loop, close fd and re open fd
-                // better way to do this?
-            }
-            else
-            {
-                //print error 
-            }
+            ////read_frame_from_context
+            //int ret = read_frame_from_context( &wc, &frame_buffer[frame_buffer_swap]);
+            //if( ret == SUCCESS )
+            //{
+            ////ST7735_DrawImage()
+            //}
+            //else if( ret == 1) //1 = Failure due to EOF
+            //{
+            //    //loop, close fd and re open fd
+            //    // better way to do this?
+            //}
+            //else
+            //{
+            //    //print error 
+            //}
 
 
         }
