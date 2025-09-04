@@ -222,6 +222,7 @@ void app(){
                     search_query[len] = c;
                 }
             }
+            cursor_position = 0;
             //ST7735_FillScreenFast( 65535);
 
         }
@@ -269,6 +270,9 @@ void app(){
 
            // TOOD: move later
            //bounds check on cursor
+           if(video_list_filtered_len > 0)
+           {
+
            if(cursor_position >= video_list_filtered_len )
            {
             cursor_position = video_list_filtered_len - 1;
@@ -288,7 +292,7 @@ void app(){
            //gggg
 
 
-           if( cursor_position < (num_rows_fit_on_screen / 2) )
+           if( cursor_position < (num_rows_fit_on_screen / 2) || video_list_filtered_len <=num_rows_fit_on_screen )
            {
                //curosr near top of list
                for( size_t i = 0; i < num_rows_fit_on_screen && i < video_list_filtered_len; i++)
@@ -362,6 +366,7 @@ void app(){
 
 
            free(video_list_filtered);
+        }
 
         }
         //else
