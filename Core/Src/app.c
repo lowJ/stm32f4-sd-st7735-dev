@@ -27,11 +27,14 @@ const size_t string_length_screen_width = SCREEN_WIDTH / CHAR_WIDTH;
 char* video_list[VIDEO_LIST_MAX_NUM_ITEMS] = { 0 };
 uint16_t video_list_num_items = 0;
 
+extern bool drawing_in_progress;
+
 static bool search_active = false;
 
 /* +1 for null terminator */
 static char search_query[NUM_CHAR_FIT_ON_SCREEN_WIDTH + 1] = { 0 };
 static size_t cursor_position = 0; // in the search list 
+static bool enter_pressed = false;
 
 /* TODO: use correct num pixels */
 uint8_t frame_buffer[2][50000] __attribute__((aligned(4)));
@@ -142,26 +145,43 @@ void app(){
             /* nothing */
 
         }
-        else if( c == CMD_SEARCH_OPEN || c == CMD_SEARCH_EXIT)
+        else if( c == CMD_SEARCH_OPEN )
+        {
+            if( ! search_active )
+            {
+                SEGGER_RTT_printf(0, "Opening Search\r\n");
+                // open search up 
+                search_active = true;
+                query_updated_this_cycle = true;
+            }
+            //else search already active, do nothing
+        }
+        else if( c == CMD_SEARCH_EXIT)
         {
             if( search_active )
             {
                 SEGGER_RTT_printf(0, "Exiting Search\r\n");
 
-                //close existing search
 
-                //zero search_query
                 //memset()
 
                 search_active = false;
+                
+                // reset 
+                cursor_position = 0;
+                memset( search_query, 0, sizeof(search_query));
 
             }
-            else
-            {
-                SEGGER_RTT_printf(0, "Opening Search\r\n");
-                // open search up 
-                search_active = true;
-            }
+            //else search not active, do nothing
+        }
+        else if( c == 'Q') // else if( CMD_ENTER )
+        {
+            enter_pressed = true;
+            SEGGER_RTT_printf(0, "Enter pressed\r\n");
+            query_updated_this_cycle = true;
+            //open fd
+            //open file
+
         }
         else if( c == 'A') //else if( c == CMD_SEARCH_UP)
         {
@@ -233,6 +253,8 @@ void app(){
         //search_active = false;
         if( search_active && query_updated_this_cycle )
         {
+
+            while( drawing_in_progress );
             ST7735_FillScreenFast( 65535);
             ST7735_WriteString(0,0, search_query, Font_7x10, 0, 65535 );
             //run query against video_list
@@ -252,6 +274,27 @@ void app(){
             //{
             //    SEGGER_RTT_printf(0, "%s\r\n", video_list_filtered[j]);
             //}
+
+            if(enter_pressed && cursor_position < video_list_filtered_len)
+            {
+                //exit the search and play the video
+                wc.current_file_path = video_list_filtered[cursor_position];
+                enter_pressed = false;
+                search_active = false;
+                cursor_position = 0;
+                f_close(&wc.fd); //TODO: check error code;
+                memset( search_query, 0, sizeof(search_query));
+                  res = f_open(&wc.fd,wc.current_file_path, FA_OPEN_EXISTING | FA_READ );
+  if(res == FR_OK)
+  {
+    SEGGER_RTT_printf(0, "File opened");
+  }
+  else
+  {
+    SEGGER_RTT_printf(0, "could not open file %d", res);
+    Error_Handler();
+  }
+            }
 
            // // figure out how many rows we can fit on screen for given font size
            #define CHAR_HEIGHT 10 /* this is determiend by chosen font */
@@ -369,26 +412,47 @@ void app(){
         }
 
         }
-        //else
-        //{
-        //   //read_frame_from_context
-        //   int ret = read_frame_from_context( &wc, &frame_buffer[frame_buffer_swap]);
-        //   if( ret == SUCCESS )
-        //   {
-        //   //ST7735_DrawImage()
-        //   }
-        //   else if( ret == 1) //1 = Failure due to EOF
-        //   {
-        //       //loop, close fd and re open fd
-        //       // better way to do this?
-        //   }
-        //   else
-        //   {
-        //       //print error 
-        //   }
+        else if(search_active == false && strlen(wc.current_file_path))
+        {
+            UINT br;
+            FRESULT res;
+            res = f_read( &wc.fd, buf[buf_swap], 2*128*160, &br);
 
+            if(res == FR_OK)
+            {
+            if(br != 2*128*160)
+            {
+                //SEGGER_RTT_printf(0, "EOF? Read %dKB", bytes_read / 1000 );
+                f_close( &wc.fd ); /* close file */
 
-        //}
+                FRESULT res = f_open(&wc.fd,wc.current_file_path, FA_OPEN_EXISTING | FA_READ );
+                if(res == FR_OK)
+                {
+                SEGGER_RTT_printf(0, "File opened");
+                }
+                else
+                {
+                SEGGER_RTT_printf(0, "could not open file %d", res);
+                Error_Handler();
+                }
+                //Error_Handler();
+            }
+            //bytes_read += br;
+            }
+            else
+            {
+            SEGGER_RTT_printf(0, "error occured reading file%d\r\n", res);
+            Error_Handler();
+            }
+
+              while( drawing_in_progress );
+
+             //start_ms = HAL_GetTick();
+             drawing_in_progress = true;
+             ST7735_DrawImage(0, 0, 160, 128, (uint16_t*)(buf[buf_swap]));
+               buf_swap = (buf_swap + 1) % 2;
+
+        }
     }
 }
 
