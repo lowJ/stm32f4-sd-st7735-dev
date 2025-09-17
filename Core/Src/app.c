@@ -174,7 +174,7 @@ void app(){
             }
             //else search not active, do nothing
         }
-        else if( c == 'Q') // else if( CMD_ENTER )
+        else if( c == CMD_SEARCH_SELECT) // else if( CMD_ENTER )
         {
             enter_pressed = true;
             SEGGER_RTT_printf(0, "Enter pressed\r\n");
@@ -183,7 +183,7 @@ void app(){
             //open file
 
         }
-        else if( c == 'A') //else if( c == CMD_SEARCH_UP)
+        else if( c == CMD_SEARCH_UP) //else if( c == CMD_SEARCH_UP)
         {
             //bounds check
             if(cursor_position > 0 )
@@ -195,17 +195,12 @@ void app(){
 
         }
         //else if( c == CMD_SEARCH_DOWN)
-        else if( c == 'S')
+        else if( c == CMD_SEARCH_DOWN)
         {
             //bounds check
             cursor_position++;
             query_updated_this_cycle = true;
             SEGGER_RTT_printf(0, "Search Cursor Down\r\n");
-        }
-        else if( c == 'Q') //else if( c == CMD_SEARCH_SELECT)
-        {
-            SEGGER_RTT_printf(0, "Select Item\r\n");
-
         }
         else
         {
