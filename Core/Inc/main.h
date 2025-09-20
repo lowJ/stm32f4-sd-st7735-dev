@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define tft_rst_GPIO_Port GPIOB
 #define tft_cs_Pin GPIO_PIN_12
 #define tft_cs_GPIO_Port GPIOB
-#define buttonB6_Pin GPIO_PIN_6
-#define buttonB6_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -110,7 +110,10 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
+  SEGGER_RTT_printf(0, "Starting...\r\n");
+  SEGGER_RTT_printf(0, "HAL_Init....");
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -119,6 +122,10 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  SEGGER_RTT_printf(0, "Done\r\n");
+  SEGGER_RTT_printf(0, "SystemClock_Config....");
+  /* USER CODE END 1 */
+  /* USER CODE END 1 */
 
   /* USER CODE END Init */
 
@@ -126,6 +133,8 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  SEGGER_RTT_printf(0, "Done\r\n");
+  SEGGER_RTT_printf(0, "Peripherals....");
 
   /* USER CODE END SysInit */
 
@@ -137,10 +146,8 @@ int main(void)
   MX_SPI4_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
-  SEGGER_RTT_ConfigUpBuffer(1, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
-  SEGGER_RTT_ConfigUpBuffer(2, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
 
+  SEGGER_RTT_printf(0, "Done\r\n");
 
   /* USER CODE END 2 */
 
@@ -393,11 +400,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : buttonB6_Pin */
-  GPIO_InitStruct.Pin = buttonB6_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(buttonB6_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : PB6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

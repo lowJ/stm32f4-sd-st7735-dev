@@ -33,7 +33,6 @@
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_sdmmc.o"
 "./FATFS/App/fatfs.o"
 "./FATFS/Target/bsp_driver_sd.o"
-"./FATFS/Target/fatfs_platform.o"
 "./FATFS/Target/sd_diskio.o"
 "./Middlewares/Third_Party/FatFs/src/diskio.o"
 "./Middlewares/Third_Party/FatFs/src/ff.o"

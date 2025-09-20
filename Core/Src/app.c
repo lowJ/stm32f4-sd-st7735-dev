@@ -85,6 +85,18 @@ int string_score_pair_cmp(const void *a, const void *b)
     }
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if(GPIO_Pin == 64)
+    {
+        SEGGER_RTT_printf(0, "SD Inserted\r\n", GPIO_Pin);
+        SEGGER_RTT_printf(0, "Rebooting....\r\n", GPIO_Pin);
+        HAL_Delay(500);
+        NVIC_SystemReset();
+        SEGGER_RTT_printf(0, "HELLO?....\r\n", GPIO_Pin);
+    }
+}
+
 /* 4 byte aligned for DMA */
 /* alternate*/
 uint8_t buf_swap = 0;
